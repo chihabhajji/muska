@@ -1,6 +1,5 @@
-export type TUser = {
-  id: string;
-  email: string;
-  name: string;
-  image: string;
-};
+export const ERole = {
+  USER: 'USER',
+  ADMIN: 'ADMIN',
+  MANAGER: 'MANAGER',
+} as const;

@@ -1,17 +1,16 @@
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import type { NextAuthOptions } from 'next-auth';
-import GitHubProvider from 'next-auth/providers/github';
+import GoogleProvider, { GoogleProfile } from 'next-auth/providers/google';
 
 import { env } from '@/env.mjs';
 import prisma from '@/lib/prisma';
-import { stripeServer } from '@/lib/stripe';
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
-    GitHubProvider({
-      clientId: env.GITHUB_ID,
-      clientSecret: env.GITHUB_SECRET,
+    GoogleProvider({
+      clientId: env.GOOGLE_ID,
+      clientSecret: env.GOOGLE_SECRET,
     }),
   ],
   callbacks: {
@@ -19,29 +18,19 @@ export const authOptions: NextAuthOptions = {
       if (!session.user) return session;
 
       session.user.id = user.id;
-      session.user.stripeCustomerId = user.stripeCustomerId;
       session.user.isActive = user.isActive;
 
       return session;
     },
   },
   events: {
-    createUser: async ({ user }) => {
-      if (!user.email || !user.name) return;
-
-      await stripeServer.customers
-        .create({
-          email: user.email,
-          name: user.name,
-        })
-        .then(async (customer) => {
-          return prisma.user.update({
-            where: { id: user.id },
-            data: {
-              stripeCustomerId: customer.id,
-            },
-          });
-        });
+    signIn({ account, profile }) {
+      if (account?.provider === 'google') {
+        const p = profile as GoogleProfile;
+        if (!p.email_verified) {
+          throw new Error('Email not verified');
+        }
+      }
     },
   },
 };

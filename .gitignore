@@ -5,6 +5,7 @@
 /.pnp
 .pnp.js
 
+sheet-service-account.json
 # testing
 /coverage
 

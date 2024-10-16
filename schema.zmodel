@@ -1,0 +1,135 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+enum Role {
+  USER
+  ADMIN
+  MANAGER
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model User {
+  id               String    @id @default(cuid())
+  name             String?
+  email            String?   @unique
+  emailVerified    DateTime?
+  image            String?
+  isActive         Boolean   @default(false)
+  accounts         Account[]
+  sessions         Session[]
+  role             Role      @default(USER)
+  joinedAt         DateTime  @default(now())
+
+  // everyone can signup, and user profile is also publicly readable
+  @@allow('create,read', true)
+
+  // only the user can update or delete their own profile
+  @@allow('update,delete', auth() == this)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Define the enum for space types
+enum SpaceType {
+  SHARED_DESK
+  PRIVATE_OFFICE
+  TEAM_SPACE
+  CINEMA
+  EVENT_SPACE
+}
+
+// Define the enum for pricing packs
+enum PricingPack {
+  FLAT
+  STUDENT
+  PROFESSIONAL
+  APPROVED
+}
+
+// Define the base Space type with common properties
+model Space {
+  id        String    @id @default(uuid())
+  imageUrls String[]
+  accomodations String[]
+  seatingCapacity Int? 
+  pricing   SpacePricing[]
+  spaceType SpaceType
+  @@delegate(spaceType)
+}
+
+// Define the specific space types inheriting from Space
+model SharedSpace extends Space {
+
+}
+
+model PersonalSpace extends Space {
+}
+
+model TeamSpace extends Space {
+  equipment      String[] // Optional equipment for team spaces
+}
+
+model CinemaSpace extends Space {
+}
+
+model EventsSpace extends Space {
+}
+
+model SpacePricing {
+  id       String    @id @default(uuid())
+  space    Space     @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  spaceId  String    
+  pack     PricingPack @default(FLAT)
+  price    Int
+  timeInterval Int
+  discountType DiscountType @default(NONE)
+  discountValue Int?
+}
+
+enum DiscountType {
+  NONE
+  PERCENTAGE
+  FIXED_AMOUNT
+}

@@ -17,6 +17,7 @@ module.exports = {
         endOfLine: 'auto',
       },
     ],
+    'jsx-a11y/no-autofocus': 'warn',
     'sort-imports': 'off',
     'tailwindcss/no-custom-classname': 'off',
     '@typescript-eslint/no-var-requires': 'off',
